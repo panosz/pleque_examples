@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from covariant_b_components import read_geqdsk
 from pleque.tests.utils import get_test_equilibria_filenames
 from fourier_series import SimpsonFourierCalculator as FC
+from more_itertools import all_equal
 
 
 
@@ -91,14 +92,29 @@ class SurfaceHarmonics():
     A collection of fourier series for magnetic quantities on a flux surface.
     """
 
-    def __init__(self, lambda_shift, R, Z, B_psi, B_theta, B_abs):
+    def __init__(self, lambda_shift, R, Z, B_psi, B_theta, B_zeta, B_abs):
+
+        inputs = (lambda_shift, R, Z, B_psi, B_theta, B_zeta, B_abs)
+
+        if not self.check_equal_max_harmonics(h.max_harmonic for h in inputs):
+            msg = 'All series must have the same max_harmonic.'
+            raise ValueError(msg)
+
         self.lambda_shift = lambda_shift
         self.R = R
         self.Z = Z
         self.B_psi = B_psi
         self.B_theta = B_theta
+        self.B_zeta = B_zeta
         self.B_abs = B_abs
 
+    @property
+    def max_harmonic(self):
+        return self.R.max_harmonic
+
+    @staticmethod
+    def check_equal_max_harmonics(iter_harmonics):
+        return all_equal(iter_harmonics)
 
     @classmethod
     def from_eq(cls, eq, surf, max_harmonic):
@@ -136,25 +152,31 @@ class SurfaceHarmonics():
         )
 
         B_psi_series = FourierSeries.from_data(theta,
-                                           B_psi,
-                                           max_harmonic)
+                                               B_psi,
+                                               max_harmonic)
 
         B_theta_series = FourierSeries.from_data(theta,
-                                           B_theta,
-                                           max_harmonic)
+                                                 B_theta,
+                                                 max_harmonic)
 
         B_abs = eq.B_abs(surf.R, surf.Z, grid=False)
 
         B_abs_series = FourierSeries.from_data(theta,
-                                            B_abs,
+                                               B_abs,
                                                max_harmonic)
 
+        B_zeta = eq.F(surf.R, surf.Z, grid=False)
+
+        B_zeta_series = FourierSeries.from_data(theta,
+                                                B_zeta,
+                                                max_harmonic)
         return cls(
             lambda_shift=lambda_series,
             R=R_series,
             Z=Z_series,
             B_psi=B_psi_series,
             B_theta=B_theta_series,
+            B_zeta=B_zeta_series,
             B_abs=B_abs_series,
         )
 
