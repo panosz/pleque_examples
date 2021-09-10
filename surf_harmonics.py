@@ -70,8 +70,9 @@ class FourierSeries():
         self.Cn = Cn
         self.Sn = Sn
 
+    @property
     def max_harmonic(self):
-        return self.Cn.size
+        return self.Cn.size-1
 
     def __call__(self, theta):
         out = 0
