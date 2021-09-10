@@ -87,6 +87,16 @@ class FourierSeries():
         return cls(*cls.calculator(theta, y, n))
 
 
+def _check_equal_max_harmonics(iter_harmonics):
+    """
+    Raises ValueError if all the elements in iter_harmonics do not have the
+    same max_harmonic
+    """
+    if not all_equal(h.max_harmonic for h in iter_harmonics):
+        msg = 'All series must have the same max_harmonic.'
+        raise ValueError(msg)
+
+
 class SurfaceHarmonics():
     """
     A collection of fourier series for magnetic quantities on a flux surface.
@@ -96,9 +106,7 @@ class SurfaceHarmonics():
 
         inputs = (lambda_shift, R, Z, B_psi, B_theta, B_zeta, B_abs)
 
-        if not self.check_equal_max_harmonics(h.max_harmonic for h in inputs):
-            msg = 'All series must have the same max_harmonic.'
-            raise ValueError(msg)
+        _check_equal_max_harmonics(inputs)
 
         self.lambda_shift = lambda_shift
         self.R = R
@@ -112,9 +120,6 @@ class SurfaceHarmonics():
     def max_harmonic(self):
         return self.R.max_harmonic
 
-    @staticmethod
-    def check_equal_max_harmonics(iter_harmonics):
-        return all_equal(iter_harmonics)
 
     @classmethod
     def from_eq(cls, eq, surf, max_harmonic):
