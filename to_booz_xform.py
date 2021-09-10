@@ -32,11 +32,13 @@ if __name__ == "__main__":
     b.bmns = col.bmns
     b.bsubumnc = col.bsubumnc
     b.bsubumns = col.bsubumns
+    b.bsubvmnc = col.bsubvmnc
+    b.bsubvmns = col.bsubvmns
     b.compute_surfs = np.arange(s_in.size)
     b.iota = iota
     b.lmnc = col.lmnc
     b.lmns = col.lmns
-    b.mboz = col.max_harmonic
+    b.mboz = col.max_harmonic+1
     b.mnmax = col.max_harmonic+1
     b.mnmax_nyq = col.max_harmonic+1
     b.mpol = col.max_harmonic+1
@@ -49,8 +51,10 @@ if __name__ == "__main__":
     b.rmnc = col.rmnc
     b.rmns = col.rmns
     b.s_in = s_in
-    b.toroidal_flux = None
-    b.verbose = True
+    b.toroidal_flux = 1
+    b.psi_lcfs = 1
+    b.psi_in = s_in * b.psi_lcfs
+    b.verbose = 2
     b.xm = col.mode_numbers
     b.xm_nyq = col.mode_numbers
     b.xn = np.zeros_like(col.mode_numbers)
@@ -58,7 +62,5 @@ if __name__ == "__main__":
     b.zmnc = col.zmnc
     b.zmns = col.zmns
 
-
-
-    #  b.run()
+    b.run()
 
