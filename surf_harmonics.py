@@ -1,4 +1,3 @@
-
 """
 Calculate the harmonics of various quantities on a flux surface
 """
@@ -6,12 +5,8 @@ import pkg_resources
 import numpy as np
 import matplotlib.pyplot as plt
 from covariant_b_components import read_geqdsk
-from pleque.tests.utils import get_test_equilibria_filenames, load_testing_equilibrium
-from pleque.core.cocos import cocos_coefs
-from scipy.optimize import minimize_scalar, brentq
-from scipy.interpolate import CubicSpline
+from pleque.tests.utils import get_test_equilibria_filenames
 from fourier_series import SimpsonFourierCalculator as FC
-from fourier_series import CubicSpline
 
 
 
@@ -65,8 +60,18 @@ class FourierSeries():
     calculator = FC()
 
     def __init__(self, Cn, Sn):
+        Cn = np.array(Cn).ravel()
+        Sn = np.array(Sn).ravel()
+
+        if not Cn.size == Sn.size:
+            msg = "The sizes of Cn and Sn must be equal."
+            raise ValueError(msg)
+
         self.Cn = Cn
         self.Sn = Sn
+
+    def max_harmonic(self):
+        return self.Cn.size
 
     def __call__(self, theta):
         out = 0
@@ -85,29 +90,44 @@ class SurfaceHarmonics():
     A collection of fourier series for magnetic quantities on a flux surface.
     """
 
-    def __init__(self, lambda_shift, R, Z, B_psi, B_theta):
+    def __init__(self, lambda_shift, R, Z, B_psi, B_theta, B_abs):
         self.lambda_shift = lambda_shift
         self.R = R
         self.Z = Z
         self.B_psi = B_psi
         self.B_theta = B_theta
+        self.B_abs = B_abs
 
 
     @classmethod
-    def from_eq(cls, eq, surf, n_harmonic):
+    def from_eq(cls, eq, surf, max_harmonic):
+        """
+        Construct on a given flux surface.
+
+        Parameters:
+        -----------
+        eq:
+            The equilibrium
+        surf:
+            The flux surface
+
+        max_harmonic: int, positive
+            The maximum harmonic number in the series
+
+        """
 
         theta=surf.theta
         lambda_series = FourierSeries.from_data(theta,
                                                 surf.lambda_shift,
-                                                n_harmonic)
+                                                max_harmonic)
 
         R_series = FourierSeries.from_data(theta,
                                            surf.R,
-                                           n_harmonic)
+                                           max_harmonic)
 
         Z_series = FourierSeries.from_data(theta,
                                            surf.Z,
-                                           n_harmonic)
+                                           max_harmonic)
 
         B_psi, B_theta = eq.get_B_pol_covariant_components(
             surf.R,
@@ -116,11 +136,17 @@ class SurfaceHarmonics():
 
         B_psi_series = FourierSeries.from_data(theta,
                                            B_psi,
-                                           n_harmonic)
+                                           max_harmonic)
 
         B_theta_series = FourierSeries.from_data(theta,
                                            B_theta,
-                                           n_harmonic)
+                                           max_harmonic)
+
+        B_abs = eq.B_abs(surf.R, surf.Z, grid=False)
+
+        B_abs_series = FourierSeries.from_data(theta,
+                                            B_abs,
+                                               max_harmonic)
 
         return cls(
             lambda_shift=lambda_series,
@@ -128,45 +154,57 @@ class SurfaceHarmonics():
             Z=Z_series,
             B_psi=B_psi_series,
             B_theta=B_theta_series,
+            B_abs=B_abs_series,
         )
 
-gfiles = get_test_equilibria_filenames()
 
-test_case = 5
-FILEPATH = gfiles[test_case]
+if __name__ == "__main__":
+    gfiles = get_test_equilibria_filenames()
 
-# Create an instance of the `Equilibrium` class
-eq = read_geqdsk(FILEPATH)
+    test_case = 5
+    FILEPATH = gfiles[test_case]
 
-surf = SurfaceData(eq._flux_surface(psi_n=0.7)[0])
+    # Create an instance of the `Equilibrium` class
+    eq = read_geqdsk(FILEPATH)
 
-theta=surf.theta
+    surf = SurfaceData(eq._flux_surface(psi_n=0.7)[0])
 
-harmonics = SurfaceHarmonics.from_eq(eq, surf, 15)
+    theta=surf.theta
 
-lambda_reconstructed = harmonics.lambda_shift(theta)
+    harmonics = SurfaceHarmonics.from_eq(eq, surf, 15)
 
-fig, ax = plt.subplots()
-ax.plot(theta, surf.lambda_shift, label='initial')
-ax.plot(theta, lambda_reconstructed, label='reconstructed')
-ax.legend()
+    lambda_reconstructed = harmonics.lambda_shift(theta)
 
-R_reconstructed = harmonics.R(theta)
-Z_reconstructed = harmonics.Z(theta)
+    fig, ax = plt.subplots()
+    ax.plot(theta, surf.lambda_shift, label='initial')
+    ax.plot(theta, lambda_reconstructed, label='reconstructed')
+    ax.legend()
 
-fig, ax = plt.subplots()
-ax.plot(surf.R, surf.Z, label='initial')
-ax.plot(R_reconstructed, Z_reconstructed, label='reconstructed')
-ax.legend()
-ax.set_aspect('equal')
+    R_reconstructed = harmonics.R(theta)
+    Z_reconstructed = harmonics.Z(theta)
 
-fig, ax = plt.subplots()
-B_psi, B_theta = eq.get_B_pol_covariant_components(surf.R, surf.Z)
-B_psi_reconstructed = harmonics.B_psi(theta)
-B_theta_reconstructed = harmonics.B_theta(theta)
+    fig, ax = plt.subplots()
+    ax.plot(surf.R, surf.Z, label='initial')
+    ax.plot(R_reconstructed, Z_reconstructed, label='reconstructed')
+    ax.legend()
+    ax.set_aspect('equal')
 
-ax.plot(theta, B_theta, label='initial')
-ax.plot(theta, B_theta_reconstructed, label='reconstructed')
-ax.legend()
-plt.show()
+    fig, ax = plt.subplots()
+    B_psi, B_theta = eq.get_B_pol_covariant_components(surf.R, surf.Z)
+    B_psi_reconstructed = harmonics.B_psi(theta)
+    B_theta_reconstructed = harmonics.B_theta(theta)
+
+    ax.plot(theta, B_theta, label='initial')
+    ax.plot(theta, B_theta_reconstructed, label='reconstructed')
+    ax.legend()
+
+    fig, ax = plt.subplots()
+    B_abs = eq.B_abs(surf.R, surf.Z, grid=False)
+    B_abs_reconstructed = harmonics.B_abs(theta)
+
+    ax.plot(theta, B_abs, label='initial')
+    ax.plot(theta, B_abs_reconstructed, label='reconstructed')
+    ax.legend()
+
+    plt.show()
 
