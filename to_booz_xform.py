@@ -6,8 +6,57 @@ import numpy as np
 import matplotlib.pyplot as plt
 from covariant_b_components import read_geqdsk
 from pleque.tests.utils import get_test_equilibria_filenames
-from booz_xform import Booz_xform
+import booz_xform
 from multiple_surf_harmonics import CollectionOfSurfaceHarmonics
+
+class Booz_xform(booz_xform.Booz_xform):
+
+
+    def init_from_geqdsk(self, FILEPATH, psi_n_in):
+        eq = read_geqdsk(FILEPATH)
+
+        psi_lcfs = eq.lcfs.psi[0]
+
+        iota = 1/eq.q(psi_n_in)
+
+        col = CollectionOfSurfaceHarmonics.from_eq(psi_n_in, eq, 7)
+
+        self.asym = True
+        self.bmnc = col.bmnc
+        self.bmns = col.bmns
+        self.bsubumnc = col.bsubumnc
+        self.bsubumns = col.bsubumns
+        self.bsubvmnc = col.bsubvmnc
+        self.bsubvmns = col.bsubvmns
+        self.compute_surfs = np.arange(psi_n_in.size)
+        self.iota = iota
+        self.lmnc = col.lmnc
+        self.lmns = col.lmns
+        self.mboz = col.max_harmonic+1
+        self.mnmax = col.max_harmonic+1
+        self.mnmax_nyq = col.max_harmonic+1
+        self.mpol = col.max_harmonic+1
+        self.mpol_nyq = col.max_harmonic
+        self.nboz = 0
+        self.nfp = 1
+        self.ns_in = psi_n_in.size
+        self.ntor = 0
+        self.ntor_nyq = 0
+        self.rmnc = col.rmnc
+        self.rmns = col.rmns
+        self.s_in = psi_n_in
+        self.toroidal_flux = psi_lcfs
+        self.psi_lcfs = psi_lcfs
+        self.psi_in = psi_n_in * self.psi_lcfs
+        self.verbose = 2
+        self.xm = col.mode_numbers
+        self.xm_nyq = col.mode_numbers
+        self.xn = np.zeros_like(col.mode_numbers)
+        self.xn_nyq = np.zeros_like(col.mode_numbers)
+        self.zmnc = col.zmnc
+        self.zmns = col.zmns
+
+        self.run()
 
 
 if __name__ == "__main__":
@@ -16,55 +65,11 @@ if __name__ == "__main__":
     test_case = 5
     FILEPATH = gfiles[test_case]
 
-    # Create an instance of the `Equilibrium` class
-    eq = read_geqdsk(FILEPATH)
-
-    psi_lcfs = eq.lcfs.psi[0]
-
-    s_in = np.linspace(0.01, 0.98, num=16)
-
-    iota = 1/eq.q(s_in)
-
-    col = CollectionOfSurfaceHarmonics.from_eq(s_in, eq, 7)
 
     b = Booz_xform()
+    s_in = np.linspace(0.01, 0.98, num=16)
+    b.init_from_geqdsk(FILEPATH, psi_n_in=s_in)
 
-    b.asym = True
-    b.bmnc = col.bmnc
-    b.bmns = col.bmns
-    b.bsubumnc = col.bsubumnc
-    b.bsubumns = col.bsubumns
-    b.bsubvmnc = col.bsubvmnc
-    b.bsubvmns = col.bsubvmns
-    b.compute_surfs = np.arange(s_in.size)
-    b.iota = iota
-    b.lmnc = col.lmnc
-    b.lmns = col.lmns
-    b.mboz = col.max_harmonic+1
-    b.mnmax = col.max_harmonic+1
-    b.mnmax_nyq = col.max_harmonic+1
-    b.mpol = col.max_harmonic+1
-    b.mpol_nyq = col.max_harmonic
-    b.nboz = 0
-    b.nfp = 1
-    b.ns_in = s_in.size
-    b.ntor = 0
-    b.ntor_nyq = 0
-    b.rmnc = col.rmnc
-    b.rmns = col.rmns
-    b.s_in = s_in
-    b.toroidal_flux = psi_lcfs
-    b.psi_lcfs = psi_lcfs
-    b.psi_in = s_in * b.psi_lcfs
-    b.verbose = 2
-    b.xm = col.mode_numbers
-    b.xm_nyq = col.mode_numbers
-    b.xn = np.zeros_like(col.mode_numbers)
-    b.xn_nyq = np.zeros_like(col.mode_numbers)
-    b.zmnc = col.zmnc
-    b.zmns = col.zmns
-
-    b.run()
 
     fig, axs = plt.subplots(2,3,tight_layout=True)
 
