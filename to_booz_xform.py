@@ -1,5 +1,5 @@
 """
-Calculate the harmonics of various quantities on multiple flux surface
+Read a booz_xform equilibrium from geqdsk data.
 """
 import pkg_resources
 import numpy as np
@@ -19,7 +19,9 @@ if __name__ == "__main__":
     # Create an instance of the `Equilibrium` class
     eq = read_geqdsk(FILEPATH)
 
-    s_in = np.linspace(0.1, 0.8, num=16)
+    psi_lcfs = eq.lcfs.psi[0]
+
+    s_in = np.linspace(0.01, 0.98, num=16)
 
     iota = 1/eq.q(s_in)
 
@@ -51,8 +53,8 @@ if __name__ == "__main__":
     b.rmnc = col.rmnc
     b.rmns = col.rmns
     b.s_in = s_in
-    b.toroidal_flux = 1
-    b.psi_lcfs = 1
+    b.toroidal_flux = psi_lcfs
+    b.psi_lcfs = psi_lcfs
     b.psi_in = s_in * b.psi_lcfs
     b.verbose = 2
     b.xm = col.mode_numbers
@@ -64,3 +66,44 @@ if __name__ == "__main__":
 
     b.run()
 
+    fig, axs = plt.subplots(2,3,tight_layout=True)
+
+    axs = axs.ravel()
+
+    psi_i = np.linspace(0, b.psi_lcfs)
+    axs[0].plot(psi_i, b.g(psi_i))
+    axs[0].plot(b.psi_b, b.Boozer_G, 'r+')
+    axs[0].set_title("G")
+
+    axs[1].plot(psi_i, b.I(psi_i))
+    axs[1].plot(b.psi_b, b.Boozer_I, 'r+')
+    axs[1].set_title("I")
+
+    axs[2].plot(psi_i, b.iota_m(psi_i))
+    axs[2].plot(b.psi_in, b.iota, 'r+')
+    axs[2].set_title("iota")
+
+    axs[3].plot(psi_i, b.q(psi_i))
+    axs[3].plot(b.psi_in, 1/b.iota, 'r+')
+    axs[3].set_title("q")
+
+    axs[4].plot(psi_i, b.psi_p(psi_i))
+    axs[4].set_title("psi_p")
+
+
+    fig, ax = plt.subplots()
+    ntheta = 100
+    nphi = 200
+    theta1d = np.linspace(0, 2 * np.pi, ntheta)
+    phi1d = np.linspace(0, 2 * np.pi / b.nfp, nphi)
+    phi, theta = np.meshgrid(phi1d, theta1d)
+
+    B = b.mod_B_model().calculate_on_surface(0.8*b.toroidal_flux,
+                                             phi=phi,
+                                             theta=theta)
+
+    ax.contourf(phi, theta, B)
+    ax.set_xlabel(R"$\phi$")
+    ax.set_ylabel(R"$\theta$")
+
+    plt.show()
