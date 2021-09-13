@@ -195,7 +195,9 @@ if __name__ == "__main__":
     # Create an instance of the `Equilibrium` class
     eq = read_geqdsk(FILEPATH)
 
-    surf = SurfaceData(eq._flux_surface(psi_n=0.7)[0])
+    eq.plot_overview()
+
+    surf = SurfaceData(eq._flux_surface(psi_n=0.7)[0], atol=1e-5)
 
     theta=surf.theta
 
@@ -203,36 +205,49 @@ if __name__ == "__main__":
 
     lambda_reconstructed = harmonics.lambda_shift(theta)
 
-    fig, ax = plt.subplots()
-    ax.plot(theta, surf.lambda_shift, label='initial')
-    ax.plot(theta, lambda_reconstructed, label='reconstructed')
-    ax.legend()
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(14,12))
+    ax = ax.ravel()
+
+    ax[0].plot(theta, surf.lambda_shift, label='initial')
+    ax[0].plot(theta, lambda_reconstructed, label='reconstructed')
+    ax[0].set_title('lambda shift')
+    ax[0].set_xlabel(R"$\theta$")
+    ax[0].set_ylabel(R"$\lambda$", rotation=0)
+    ax[0].legend()
 
     R_reconstructed = harmonics.R(theta)
     Z_reconstructed = harmonics.Z(theta)
 
-    fig, ax = plt.subplots()
-    ax.plot(surf.R, surf.Z, label='initial')
-    ax.plot(R_reconstructed, Z_reconstructed, label='reconstructed')
-    ax.legend()
-    ax.set_aspect('equal')
 
-    fig, ax = plt.subplots()
+    ax[1].plot(surf.R, surf.Z, label='initial')
+    ax[1].plot(R_reconstructed, Z_reconstructed, label='reconstructed')
+    ax[1].set_title("flux surface")
+    ax[1].set_xlabel("R")
+    ax[1].set_ylabel("Z", rotation=0)
+    ax[1].legend()
+    ax[1].set_aspect('equal')
+
     B_psi, B_theta = eq.get_B_pol_covariant_components(surf.R, surf.Z)
     B_psi_reconstructed = harmonics.B_psi(theta)
     B_theta_reconstructed = harmonics.B_theta(theta)
 
-    ax.plot(theta, B_theta, label='initial')
-    ax.plot(theta, B_theta_reconstructed, label='reconstructed')
-    ax.legend()
+    ax[2].plot(theta, B_theta, label='initial')
+    ax[2].plot(theta, B_theta_reconstructed, label='reconstructed')
+    ax[2].set_title("B theta covariant")
+    ax[2].set_xlabel(r"$\theta$")
+    ax[2].set_ylabel(r"$B_\theta$", rotation=0)
+    ax[2].legend()
 
-    fig, ax = plt.subplots()
     B_abs = eq.B_abs(surf.R, surf.Z, grid=False)
     B_abs_reconstructed = harmonics.B_abs(theta)
 
-    ax.plot(theta, B_abs, label='initial')
-    ax.plot(theta, B_abs_reconstructed, label='reconstructed')
-    ax.legend()
+    ax[3].plot(theta, B_abs, label='initial')
+    ax[3].plot(theta, B_abs_reconstructed, label='reconstructed')
+    ax[3].set_title("magnitude of B")
+    ax[3].set_xlabel(r"$\theta$")
+    ax[3].set_ylabel(r"$\left|B\right|$", rotation=0)
+    ax[3].legend()
 
+    plt.tight_layout()
     plt.show()
 
