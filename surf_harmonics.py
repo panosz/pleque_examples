@@ -6,9 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from covariant_b_components import read_geqdsk
 from pleque.tests.utils import get_test_equilibria_filenames
-from fourier_series import SimpsonFourierCalculator as FC
 from more_itertools import all_equal
-
+from fourier_series.fourier_series import FourierSeries
 
 
 
@@ -56,35 +55,6 @@ class SurfaceData():
         """
         return self.straight_fieldline_theta - self.theta
 
-
-class FourierSeries():
-    calculator = FC()
-
-    def __init__(self, Cn, Sn):
-        Cn = np.array(Cn).ravel()
-        Sn = np.array(Sn).ravel()
-
-        if not Cn.size == Sn.size:
-            msg = "The sizes of Cn and Sn must be equal."
-            raise ValueError(msg)
-
-        self.Cn = Cn
-        self.Sn = Sn
-
-    @property
-    def max_harmonic(self):
-        return self.Cn.size-1
-
-    def __call__(self, theta):
-        out = 0
-        for n in range(self.Cn.size):
-            out += self.Cn[n]*np.cos(n*theta) + self.Sn[n]*np.sin(n*theta)
-
-        return out
-
-    @classmethod
-    def from_data(cls, theta, y, n):
-        return cls(*cls.calculator(theta, y, n))
 
 
 def _check_equal_max_harmonics(iter_harmonics):
@@ -249,5 +219,10 @@ if __name__ == "__main__":
     ax[3].legend()
 
     plt.tight_layout()
+
+    R = harmonics.R
+    theta = np.array([0.1, 1])
+    res = np.zeros_like(theta)
+
     plt.show()
 
